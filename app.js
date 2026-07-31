@@ -7,7 +7,7 @@
    2) The Relay webhook stays wired in below it — requests fire
       to both endpoints in parallel.
    ============================================================ */
-const N8N_WEBHOOK_URL = "https://<your-n8n-host>/webhook/translation-request-2";
+const N8N_WEBHOOK_URL = "https://staging-workflow.goodera.com/webhook/translation-request-2";
 const RELAY_WEBHOOK_URL = "https://hook.relay.app/api/v1/playbook/cmr4r1ebp0okw0pm3br3cgunp/trigger/u4RGadgMA0Ew_ZXEPxFhqg";
 
 // --- element refs ---
