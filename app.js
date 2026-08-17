@@ -166,31 +166,39 @@ async function translate() {
   }
 
   sendBtn.disabled = true;
-  sendBtn.textContent = "Sending…";
+  sendBtn.textContent = "Translating…";
 
   const body = JSON.stringify({
     inputType: "text",
     sourceText: sourceText.value.trim(),
     targetLanguage: targetLanguage.value
   });
-  // no-cors: fire-and-forget to both endpoints, no response is read.
-  const opts = {
+
+  // Relay: fire-and-forget, response not needed, no-cors is fine here.
+  fetch(RELAY_WEBHOOK_URL, {
     method: "POST",
     mode: "no-cors",
     headers: { "Content-Type": "text/plain;charset=UTF-8" },
     body
-  };
+  }).catch(err => console.warn("Relay webhook failed (non-blocking):", err));
 
   try {
-    await Promise.all([
-      fetch(N8N_WEBHOOK_URL, opts),
-      fetch(RELAY_WEBHOOK_URL, opts)
-    ]);
-    statusEl.className = "status";
-    statusEl.textContent = "Sent.";
+    // n8n: normal (CORS) request so we can actually read the response body.
+    // This is what makes the translation show up on the page — no-cors
+    // mode would make the response invisible to JS even on success.
+    const res = await fetch(N8N_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=UTF-8" },
+      body
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || ("n8n returned " + res.status));
+    resultText.textContent = data.translation || "";
+    resultBox.hidden = false;
+    resultBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
   } catch (err) {
     statusEl.className = "status err";
-    statusEl.textContent = "Couldn't reach one of the services. Check your connection and try again.";
+    statusEl.textContent = "Couldn't get the translation back. If this keeps happening, check that the n8n response includes an Access-Control-Allow-Origin header.";
   } finally {
     sendBtn.disabled = false;
     sendBtn.textContent = "Translate";
